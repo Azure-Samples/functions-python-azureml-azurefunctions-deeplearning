@@ -1,0 +1,164 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+	     "uniqueResourceNameSuffix" : {
+	          "type" : "string",
+	          "defaultValue" : "[uniqueString(subscription().subscriptionId, resourceGroup().id)]"
+	      },
+        "config_web_name": {
+            "defaultValue": "web",
+            "type": "String"
+        },
+        "storageName": {
+            "defaultValue": "[uniqueString(subscription().subscriptionId, resourceGroup().id)]",
+            "type": "String"
+        },
+        "linuxConsumptionAppName": {
+            "defaultValue": "WestUSLinuxDynamicPlan",
+            "type": "String"
+        }
+    },
+    "variables": {
+        "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', parameters('storageName'))]",
+	      "functionapp" : "[concat('incv3',parameters('uniqueResourceNameSuffix'))]",
+	      "siteName1" : "[concat(variables('functionapp'),'.azurewebsites.net')]"
+    },
+    "resources": [
+        {
+            "name": "[parameters('storageName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2017-10-01",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "StorageV2",
+            "location": "West US",
+            "tags": {},
+            "properties": {
+                "accessTier": "Hot"
+            }
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "sku": {
+                "name": "Y1",
+                "tier": "Dynamic",
+                "size": "Y1",
+                "family": "Y",
+                "capacity": 0
+            },
+            "kind": "functionapp",
+            "name": "[parameters('linuxConsumptionAppName')]",
+            "apiVersion": "2016-09-01",
+            "location": "West US",
+            "properties": {
+                "name": "[parameters('linuxConsumptionAppName')]",
+                "perSiteScaling": false,
+                "reserved": true
+            },
+            "dependsOn": []
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "kind": "functionapp,linux",
+            "name": "[variables('functionapp')]",
+            "apiVersion": "2016-08-01",
+            "location": "West US",
+            "properties": {
+                "enabled": true,
+                "hostNameSslStates": [
+                    {
+                        "name": "[concat(variables('functionapp'),'.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Standard"
+                    }
+                ],
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('linuxConsumptionAppName'))]",
+                "reserved": true,
+                "siteConfig": {
+                    "appSettings": [
+                      {
+                        "name": "AzureWebJobsDashboard",
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+                      },
+                      {
+                        "name": "AzureWebJobsStorage",
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+                      },
+                      {
+                        "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+                      },
+                      {
+                        "name": "WEBSITE_CONTENTSHARE",
+                        "value": "[variables('functionapp')]"
+                      },
+                      {
+                        "name": "FUNCTIONS_EXTENSION_VERSION",
+                        "value": "~2"
+                      },
+                      {
+                        "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                        "value": "8.11.1"
+                      },
+                      {
+                        "name": "FUNCTIONS_WORKER_RUNTIME",
+                        "value": "python"
+                      }
+                    ]
+                  }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', parameters('linuxConsumptionAppName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites/config",
+            "name": "[concat(variables('functionapp'), '/', parameters('config_web_name'))]",
+            "apiVersion": "2016-08-01",
+            "location": "West US",
+            "properties": {
+                "netFrameworkVersion": "v4.0",
+                "scmType": "None",
+                "use32BitWorkerProcess": true,
+                "webSocketsEnabled": false,
+                "alwaysOn": false,
+                "appCommandLine": "",
+                "managedPipelineMode": "Integrated",
+                "virtualApplications": [
+                    {
+                        "virtualPath": "/",
+                        "physicalPath": "site\\wwwroot",
+                        "preloadEnabled": false                    
+                    }
+                ],
+                "customAppPoolIdentityAdminState": false,
+                "customAppPoolIdentityTenantState": false,
+                "loadBalancing": "LeastRequests",
+                "routingRules": [],
+                "experiments": {
+                    "rampUpRules": []
+                },
+                "autoHealEnabled": false,
+                "vnetName": ""
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('functionapp'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Web/sites/hostNameBindings",
+            "name": "[concat(variables('functionapp'), '/', variables('siteName1'))]",
+            "apiVersion": "2016-08-01",
+            "location": "West US",
+            "properties": {
+                "siteName": "ldamodeling",
+                "hostNameType": "Verified"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('functionapp'))]"
+            ]
+        }
+    ]
+}
