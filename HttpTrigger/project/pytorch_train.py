@@ -48,6 +48,7 @@ from azureml.core import Datastore
 # get the Azure ML run object
 run = Run.get_context()
 
+
 def load_data(data_dir):
     """Load the train/val data."""
 
@@ -190,6 +191,7 @@ def fine_tune_model(num_epochs, data_dir, learning_rate, momentum, transfer_lear
 
     return model
 
+
 def main():
     print("PyTorch version:", torch.__version__)
 
@@ -214,6 +216,7 @@ def main():
                             args.learning_rate, args.momentum, bool(args.trans))
     os.makedirs(args.output_dir, exist_ok=True)
     torch.save(model, os.path.join(args.output_dir, 'model_finetuned.pth'))
+
 
 if __name__ == "__main__":
     main()

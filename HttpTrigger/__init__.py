@@ -19,18 +19,18 @@ def main(req: func.HttpRequest) -> (func.HttpResponse):
     image_url = req.params.get('start')
     logging.info(type(image_url))
 
-    # Use service principal secrets to create authentication vehicle and 
+    # Use service principal secrets to create authentication vehicle and
     # define workspace object
-    try:    
+    try:
         svc_pr = ServicePrincipalAuthentication(
             tenant_id=os.getenv('TENANT_ID', ''),
             service_principal_id=os.getenv('APP_ID', ''),
             service_principal_password=os.getenv('PRINCIPAL_PASSWORD', ''))
 
         ws = Workspace(subscription_id=os.getenv('AZURE_SUB', ''),
-                    resource_group=os.getenv('RESOURCE_GROUP', ''),
-                    workspace_name=os.getenv('WORKSPACE_NAME',''),
-                    auth=svc_pr)
+                       resource_group=os.getenv('RESOURCE_GROUP', ''),
+                       workspace_name=os.getenv('WORKSPACE_NAME', ''),
+                       auth=svc_pr)
         print("Found workspace {} at location {} using Azure CLI \
             authentication".format(ws.name, ws.location))
     # Usually because authentication didn't work
@@ -40,14 +40,12 @@ def main(req: func.HttpRequest) -> (func.HttpResponse):
     # Need to create the workspace
     except Exception as err:
         ws = Workspace.create(name=os.getenv('WORKSPACE_NAME', ''),
-                    subscription_id=os.getenv('AZURE_SUB', ''), 
-                    resource_group=os.getenv('RESOURCE_GROUP', ''),
-                    create_resource_group=True,
-                    location='westus', # Or other supported Azure region   
-                    auth=svc_pr)
+                              subscription_id=os.getenv('AZURE_SUB', ''),
+                              resource_group=os.getenv('RESOURCE_GROUP', ''),
+                              create_resource_group=True,
+                              location='westus',  # Or other supported Azure region
+                              auth=svc_pr)
         print("Created workspace {} at location {}".format(ws.name, ws.location))
-
-       
 
     # choose a name for your cluster - under 16 characters
     cluster_name = "gpuforpytorch"
@@ -59,13 +57,13 @@ def main(req: func.HttpRequest) -> (func.HttpResponse):
         print('Creating a new compute target...')
         # AML Compute config - if max_nodes are set, it becomes persistent storage that scales
         compute_config = AmlCompute.provisioning_configuration(vm_size='STANDARD_NC6',
-                                                            min_nodes=0,
-                                                            max_nodes=2)
+                                                               min_nodes=0,
+                                                               max_nodes=2)
         # create the cluster
         compute_target = ComputeTarget.create(ws, cluster_name, compute_config)
         compute_target.wait_for_completion(show_output=True)
 
-    # use get_status() to get a detailed status for the current cluster. 
+    # use get_status() to get a detailed status for the current cluster.
     # print(compute_target.get_status().serialize())
 
     # # Create a project directory and copy training script to ii
@@ -78,22 +76,28 @@ def main(req: func.HttpRequest) -> (func.HttpResponse):
     experiment = Experiment(ws, name=experiment_name)
 
     # Use an AML Data Store for training data
-    ds = Datastore.register_azure_blob_container(workspace=ws, 
-        datastore_name='funcdefaultdatastore', 
-        container_name=os.getenv('STORAGE_CONTAINER_NAME_TRAINDATA', ''),
-        account_name=os.getenv('STORAGE_ACCOUNT_NAME', ''), 
-        account_key=os.getenv('STORAGE_ACCOUNT_KEY', ''),
-        create_if_not_exists=True)
+    ds = Datastore.register_azure_blob_container(workspace=ws,
+                                                 datastore_name='funcdefaultdatastore',
+                                                 container_name=os.getenv(
+                                                     'STORAGE_CONTAINER_NAME_TRAINDATA', ''),
+                                                 account_name=os.getenv(
+                                                     'STORAGE_ACCOUNT_NAME', ''),
+                                                 account_key=os.getenv(
+                                                     'STORAGE_ACCOUNT_KEY', ''),
+                                                 create_if_not_exists=True)
 
     # Use an AML Data Store to save models back up to
-    ds_models = Datastore.register_azure_blob_container(workspace=ws, 
-        datastore_name='modelsdatastorage', 
-        container_name=os.getenv('STORAGE_CONTAINER_NAME_MODELS', ''),
-        account_name=os.getenv('STORAGE_ACCOUNT_NAME', ''), 
-        account_key=os.getenv('STORAGE_ACCOUNT_KEY', ''),
-        create_if_not_exists=True)
+    ds_models = Datastore.register_azure_blob_container(workspace=ws,
+                                                        datastore_name='modelsdatastorage',
+                                                        container_name=os.getenv(
+                                                            'STORAGE_CONTAINER_NAME_MODELS', ''),
+                                                        account_name=os.getenv(
+                                                            'STORAGE_ACCOUNT_NAME', ''),
+                                                        account_key=os.getenv(
+                                                            'STORAGE_ACCOUNT_KEY', ''),
+                                                        create_if_not_exists=True)
 
-    # Set up for training ("trans" flag means - use transfer learning and 
+    # Set up for training ("trans" flag means - use transfer learning and
     # this should download a model on compute)
     # Using /tmp to store model and info due to the fact that
     # creating new folders and files on the Azure Function host
@@ -108,7 +112,7 @@ def main(req: func.HttpRequest) -> (func.HttpResponse):
 
     # Instantiate PyTorch estimator with upload of final model to
     # a specified blob storage container (this can be anything)
-    estimator = PyTorch(source_directory=project_folder, 
+    estimator = PyTorch(source_directory=project_folder,
                         script_params=script_params,
                         compute_target=compute_target,
                         entry_script='pytorch_train.py',
@@ -117,7 +121,7 @@ def main(req: func.HttpRequest) -> (func.HttpResponse):
 
     run = experiment.submit(estimator)
     print(run.get_details())
-    
+
     # # The following would certainly be blocking, but that's ok for debugging
     # while run.get_status() not in ['Completed', 'Failed']: # For example purposes only, not exhaustive
     #    print('Run {} not in terminal state'.format(run.id))
