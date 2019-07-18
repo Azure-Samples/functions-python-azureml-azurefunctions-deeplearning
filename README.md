@@ -1,10 +1,11 @@
 ---
-topic: sample
+page_type: sample
 languages:
-    - python
+- python
 products:
-    - azure-functions
-author: michhar
+- azure
+- azure-functions
+description: "Communicate the process of training a model using a Python-based Azure Function and the Azure ML Python SDK."
 ---
 
 # Training a Model with AzureML and Azure Functions
