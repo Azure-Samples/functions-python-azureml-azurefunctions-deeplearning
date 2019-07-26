@@ -20,7 +20,7 @@ The idea is that once new data is provided, it would signal training a new model
 
 The following diagram represents an example process as part of a larger deployment.  The end product or application could be an IoT Edge module, web service or any other application a DevOps build/release can produce.
 
-<img src="images/arch_diagram.png" width="100%">
+![](images/arch_diagram.png)
 
 # Getting started
 
