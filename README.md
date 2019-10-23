@@ -6,6 +6,7 @@ products:
 - azure
 - azure-functions
 description: "Communicate the process of training a model using a Python-based Azure Function and the Azure ML Python SDK."
+urlFragment: training-a-model-with-azureml-and-azure-functions
 ---
 
 # Training a Model with AzureML and Azure Functions
@@ -22,7 +23,7 @@ The following diagram represents an example process as part of a larger deployme
 
 ![](images/arch_diagram.png)
 
-# Getting started
+## Getting started
 
 The instructions below are an example - it follows [this Azure Docs tutorial](https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-first-function-python) which should be referenced as needed.
 
