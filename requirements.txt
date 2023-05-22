@@ -5,6 +5,6 @@ grpcio-tools==1.20.1
 protobuf==3.6.1
 six==1.12.0
 azureml-sdk==1.0.39
-requests==2.20.1
+requests==2.31.0
 scikit-image==0.14.2
 scikit-learn==0.20.2
